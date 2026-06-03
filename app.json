@@ -2,6 +2,7 @@
   "expo": {
     "name": "namibia-app",
     "slug": "namibia-app",
+    "scheme": "namibia",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,6 +21,18 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.namibiaapp",
+          "enableGooglePay": false
+        }
+      ],
+      "expo-secure-store",
+      "expo-font"
+    ]
   }
 }
