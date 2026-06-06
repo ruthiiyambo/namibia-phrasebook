@@ -1,18 +1,22 @@
 {
   "expo": {
-    "name": "namibia-app",
-    "slug": "namibia-app",
+    "name": "Namibia Phrasebook",
+    "slug": "namibia-phrasebook",
     "scheme": "namibia",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.namibiaphrasebook.app",
+      "buildNumber": "1"
     },
     "android": {
+      "package": "com.namibiaphrasebook.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1B4332",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -33,6 +37,12 @@
       ],
       "expo-secure-store",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "83ce5437-e86b-43c9-86ad-c2e2194c8520"
+      }
+    }
   }
 }

@@ -42,9 +42,6 @@ export function LanguagePicker({ selected, onChange }: Props) {
             style={[styles.chip, active && styles.chipActive]}
             onPress={() => onChange(lang.code)}
           >
-            {lang.flag_emoji ? (
-              <Text style={styles.flag}>{lang.flag_emoji}</Text>
-            ) : null}
             <Text style={[styles.label, active && styles.labelActive]}>
               {lang.name}
             </Text>
