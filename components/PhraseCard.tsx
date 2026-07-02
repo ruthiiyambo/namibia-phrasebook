@@ -1,52 +1,142 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  Alert,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Colors } from '@/constants/Colors';
-import { Translation } from '@/lib/supabase';
+import { usePhrasebookState } from '@/hooks/usePhrasebookState';
+import { getPhraseReportMailtoUrl } from '@/lib/app-info';
+import { Translation } from '@/lib/phrasebook-types';
 
 type Props = {
   item: Translation;
-  onPress?: () => void;
-  locked?: boolean;
 };
 
-export function PhraseCard({ item, onPress, locked = false }: Props) {
-  const tierColors = item.tier === 'free' ? Colors.free : Colors.paid;
+export function PhraseCard({ item }: Props) {
+  const [expanded, setExpanded] = React.useState(false);
+  const {
+    addRecent,
+    favoriteSet,
+    markReported,
+    reportedSet,
+    savedForTripSet,
+    toggleFavorite,
+    toggleSavedForTrip,
+  } = usePhrasebookState();
+  const isFavorite = favoriteSet.has(item.id);
+  const isReported = reportedSet.has(item.id);
+  const isSavedForTrip = savedForTripSet.has(item.id);
+
+  const openDetails = () => {
+    setExpanded((current) => {
+      const nextValue = !current;
+
+      if (nextValue) {
+        addRecent(item.id);
+      }
+
+      return nextValue;
+    });
+  };
+
+  const handleReport = async () => {
+    addRecent(item.id);
+    markReported(item.id);
+
+    try {
+      await Linking.openURL(getPhraseReportMailtoUrl(item));
+    } catch {
+      Alert.alert(
+        'Email app not available',
+        'We could not open your email app. You can still send phrase feedback to the support email listed in About.',
+      );
+    }
+  };
 
   return (
-    <TouchableOpacity
-      style={[styles.card, locked && styles.locked]}
-      onPress={onPress}
-      activeOpacity={0.75}
+    <Pressable
+      onPress={openDetails}
+      style={[styles.card, expanded && styles.cardExpanded]}
     >
-      {/* Tier badge */}
-      <View style={[styles.badge, { backgroundColor: tierColors.bg }]}>
-        <Text style={[styles.badgeText, { color: tierColors.text }]}>
-          {item.tier === 'free' ? 'FREE' : 'PRO'}
-        </Text>
-      </View>
-
-      {/* Main content */}
-      <Text style={styles.english}>{item.english_text}</Text>
-      <Text style={[styles.translation, locked && styles.blur]}>
-        {locked ? '••••••' : item.translated_text}
-      </Text>
-      {!locked && item.pronunciation ? (
-        <Text style={styles.pronunciation}>/{item.pronunciation}/</Text>
-      ) : null}
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.category}>{item.category}</Text>
-        <Text style={styles.type}>{item.type}</Text>
-      </View>
-
-      {locked && (
-        <View style={styles.lockOverlay}>
-          <Text style={styles.lockIcon}>🔒</Text>
-          <Text style={styles.lockText}>Pro</Text>
+      <View style={styles.topRow}>
+        <View style={styles.pillRow}>
+          <Text style={styles.categoryPill}>{item.category}</Text>
+          <Text style={styles.typePill}>{item.type}</Text>
         </View>
-      )}
-    </TouchableOpacity>
+        <View style={styles.pillRow}>
+          {isFavorite ? <Text style={styles.statePill}>Favorite</Text> : null}
+          {isSavedForTrip ? <Text style={styles.statePillAlt}>Trip</Text> : null}
+        </View>
+      </View>
+
+      <Text style={styles.englishLabel}>English</Text>
+      <Text style={styles.english}>{item.english_text}</Text>
+
+      <Text style={styles.translationLabel}>Local phrase</Text>
+      <Text style={styles.translation}>{item.translated_text}</Text>
+      <Text style={styles.tapHint}>
+        {expanded ? 'Tap again to collapse.' : 'Tap to reveal notes and actions.'}
+      </Text>
+
+      {expanded ? (
+        <>
+          {item.pronunciation ? (
+            <Text style={styles.pronunciation}>Say it like: {item.pronunciation}</Text>
+          ) : null}
+          {item.notes ? (
+            <Text style={styles.notes}>When to use it: {item.notes}</Text>
+          ) : null}
+
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              activeOpacity={0.86}
+              onPress={(event) => {
+                event.stopPropagation();
+                addRecent(item.id);
+                toggleFavorite(item.id);
+              }}
+              style={[styles.actionButton, isFavorite && styles.actionButtonActive]}
+            >
+              <Text style={[styles.actionLabel, isFavorite && styles.actionLabelActive]}>
+                {isFavorite ? 'Favorited' : 'Favorite'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.86}
+              onPress={(event) => {
+                event.stopPropagation();
+                addRecent(item.id);
+                toggleSavedForTrip(item.id);
+              }}
+              style={[styles.actionButton, isSavedForTrip && styles.actionButtonAccent]}
+            >
+              <Text style={[styles.actionLabel, isSavedForTrip && styles.actionLabelAccent]}>
+                {isSavedForTrip ? 'Saved for trip' : 'Save for trip'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.86}
+              onPress={(event) => {
+                event.stopPropagation();
+                void handleReport();
+              }}
+              style={[styles.actionButton, isReported && styles.actionButtonMuted]}
+            >
+              <Text style={[styles.actionLabel, isReported && styles.actionLabelMuted]}>
+                {isReported ? 'Correction suggested' : 'Report phrase'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -63,71 +153,143 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  locked: {
-    opacity: 0.7,
+  cardExpanded: {
+    borderColor: Colors.primary,
+    borderWidth: 1,
   },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginBottom: 8,
+  topRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  badgeText: {
-    fontSize: 10,
+  pillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryPill: {
+    backgroundColor: Colors.primaryLight,
+    color: Colors.primary,
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  typePill: {
+    backgroundColor: Colors.surfaceAlt,
+    color: Colors.textMid,
+    borderRadius: 999,
+    fontSize: 11,
     fontWeight: '700',
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    textTransform: 'capitalize',
+  },
+  statePill: {
+    backgroundColor: '#FDE68A',
+    color: '#92400E',
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  statePillAlt: {
+    backgroundColor: Colors.primary,
+    color: '#fff',
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  englishLabel: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
     letterSpacing: 0.5,
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   english: {
     fontSize: 17,
     fontWeight: '600',
     color: Colors.text,
+    marginBottom: 10,
+  },
+  translationLabel: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   translation: {
     fontSize: 20,
     fontWeight: '700',
     color: Colors.primary,
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  blur: {
-    color: Colors.border,
+  tapHint: {
+    color: Colors.textMuted,
+    fontSize: 12,
   },
   pronunciation: {
     fontSize: 13,
-    color: Colors.textMuted,
-    fontStyle: 'italic',
+    color: Colors.textMid,
     marginBottom: 8,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  category: {
-    fontSize: 12,
+  notes: {
     color: Colors.textMid,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 4,
   },
-  type: {
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 16,
+  },
+  actionButton: {
+    backgroundColor: Colors.surfaceAlt,
+    borderColor: Colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  actionButtonActive: {
+    backgroundColor: '#FDE68A',
+    borderColor: '#F59E0B',
+  },
+  actionButtonAccent: {
+    backgroundColor: Colors.primaryLight,
+    borderColor: '#8FD19E',
+  },
+  actionButtonMuted: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
+  },
+  actionLabel: {
+    color: Colors.textMid,
     fontSize: 12,
-    color: Colors.textMuted,
-    textTransform: 'capitalize',
+    fontWeight: '800',
   },
-  lockOverlay: {
-    position: 'absolute',
-    right: 16,
-    top: 16,
-    alignItems: 'center',
+  actionLabelActive: {
+    color: '#92400E',
   },
-  lockIcon: {
-    fontSize: 16,
+  actionLabelAccent: {
+    color: Colors.primary,
   },
-  lockText: {
-    fontSize: 10,
-    color: Colors.accent,
-    fontWeight: '700',
+  actionLabelMuted: {
+    color: '#3730A3',
   },
 });

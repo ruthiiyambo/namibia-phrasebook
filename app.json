@@ -1,16 +1,30 @@
 {
   "expo": {
     "name": "Namibia Phrasebook",
+    "description": "A travel phrasebook for essential Namibia languages, with searchable phrases and pronunciation help.",
     "slug": "namibia-phrasebook",
     "scheme": "namibia",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1B4332"
+    },
     "userInterfaceStyle": "light",
+    "backgroundColor": "#FFFBF5",
+    "primaryColor": "#1B4332",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.namibiaphrasebook.app",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.namibiaphrasebook.app",
@@ -27,16 +41,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.namibiaapp",
-          "enableGooglePay": false
-        }
-      ],
-      "expo-secure-store",
-      "expo-font"
+      "expo-router"
     ],
     "extra": {
       "router": {},

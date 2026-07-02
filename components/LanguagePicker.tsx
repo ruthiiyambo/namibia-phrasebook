@@ -1,32 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
+  Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
-import { supabase, Language } from '@/lib/supabase';
+import { Language } from '@/lib/phrasebook-types';
 
 type Props = {
-  selected: string;          // language code, e.g. 'af'
+  error?: string | null;
+  languages: Language[];
+  loading?: boolean;
   onChange: (code: string) => void;
+  selected: string;
 };
 
-export function LanguagePicker({ selected, onChange }: Props) {
-  const [languages, setLanguages] = useState<Language[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase
-      .from('languages')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order')
-      .then(({ data }) => {
-        setLanguages((data as Language[]) ?? []);
-        setLoading(false);
-      });
-  }, []);
-
+export function LanguagePicker({
+  selected,
+  onChange,
+  languages,
+  loading = false,
+  error = null,
+}: Props) {
   if (loading) return <ActivityIndicator color={Colors.primary} style={{ margin: 8 }} />;
+  if (error) return <Text style={styles.error}>{error}</Text>;
+  if (languages.length === 0) return <Text style={styles.error}>No languages available yet.</Text>;
 
   return (
     <ScrollView
@@ -42,6 +38,9 @@ export function LanguagePicker({ selected, onChange }: Props) {
             style={[styles.chip, active && styles.chipActive]}
             onPress={() => onChange(lang.code)}
           >
+            {lang.flag_emoji ? (
+              <Text style={styles.flag}>{lang.flag_emoji}</Text>
+            ) : null}
             <Text style={[styles.label, active && styles.labelActive]}>
               {lang.name}
             </Text>
@@ -84,5 +83,10 @@ const styles = StyleSheet.create({
   labelActive: {
     color: '#fff',
     fontWeight: '700',
+  },
+  error: {
+    color: Colors.danger,
+    marginHorizontal: 16,
+    marginTop: 10,
   },
 });

@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert,
+  Linking,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from 'react-native';
-import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
-import { PaywallModal } from '@/components/PaywallModal';
+import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
-import { PLAN_LABELS, PlanKey } from '@/lib/stripe';
+import { demoCategories, demoLanguages, demoTranslations } from '@/lib/demo-data';
+import { AppInfo, getSupportMailtoUrl } from '@/lib/app-info';
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -18,66 +24,93 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
-  const { subscription, isActive } = useSubscription();
-  const [paywallVisible, setPaywallVisible] = useState(false);
-
-  const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
-    ]);
-  };
-
-  const planLabel = subscription
-    ? PLAN_LABELS[subscription.plan as PlanKey]?.title ?? subscription.plan
-    : 'Free';
-
-  const periodEnd = subscription?.current_period_end
-    ? new Date(subscription.current_period_end).toLocaleDateString()
-    : null;
+  const { width } = useWindowDimensions();
+  const totalLanguages = demoLanguages.length;
+  const totalPhrases = demoTranslations.length;
+  const totalCategories = demoCategories.length;
+  const compactStats = width < 420;
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.email?.[0]?.toUpperCase() ?? '?'}
+          <Text style={styles.avatarText}>🇳🇦</Text>
+        </View>
+        <Text style={styles.email}>{AppInfo.name}</Text>
+        <Text style={styles.subtitle}>
+          {AppInfo.tagline}
+        </Text>
+
+        <View style={[styles.statRow, compactStats && styles.statRowCompact]}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{totalLanguages}</Text>
+            <Text style={styles.statLabel}>Languages</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{totalPhrases}</Text>
+            <Text style={styles.statLabel}>Workbook phrases</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{totalCategories}</Text>
+            <Text style={styles.statLabel}>Categories</Text>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>What This App Does</Text>
+          <Text style={styles.note}>
+            {AppInfo.summary}
           </Text>
         </View>
-        <Text style={styles.email}>{user?.email}</Text>
 
-        {/* Subscription card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Subscription</Text>
-          <Row label="Plan" value={planLabel} />
-          <Row label="Status" value={isActive ? '✅ Active' : '—'} />
-          {periodEnd && <Row label="Renews / Expires" value={periodEnd} />}
-
-          {!isActive && (
-            <TouchableOpacity
-              style={styles.upgradeBtn}
-              onPress={() => setPaywallVisible(true)}
-            >
-              <Text style={styles.upgradeBtnText}>Unlock All Phrases →</Text>
-            </TouchableOpacity>
-          )}
+          <Text style={styles.cardTitle}>Works Offline</Text>
+          <Row label="Connection" value="Not required for phrase browsing" />
+          <Row label="Content source" value="Bundled workbook data" />
+          <Row label="Accounts" value="Not required in v1" />
+          <Text style={styles.note}>
+            {AppInfo.offlineNote}
+          </Text>
         </View>
 
-        {/* Sign out */}
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </ScrollView>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Languages Inside</Text>
+          <Text style={styles.note}>
+            {demoLanguages.map((language) => language.name).join(' • ')}
+          </Text>
+        </View>
 
-      <PaywallModal
-        visible={paywallVisible}
-        onClose={() => setPaywallVisible(false)}
-        onSelectPlan={(_plan: PlanKey) => {
-          setPaywallVisible(false);
-          alert('Stripe payment sheet coming soon.');
-        }}
-      />
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Support</Text>
+          <Row label="Email" value={AppInfo.supportEmail} />
+          <Text style={styles.note}>
+            {AppInfo.supportNote}
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={() => Linking.openURL(getSupportMailtoUrl())}
+            style={styles.primaryButton}
+          >
+            <Text style={styles.primaryButtonText}>Email support</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Privacy & Data</Text>
+          {AppInfo.privacyHighlights.slice(0, 3).map((item) => (
+            <Text key={item} style={styles.bullet}>
+              • {item}
+            </Text>
+          ))}
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={() => router.push('/privacy')}
+            style={styles.secondaryButton}
+          >
+            <Text style={styles.secondaryButtonText}>Read privacy details</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -95,7 +128,39 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   avatarText: { color: '#fff', fontSize: 28, fontWeight: '700' },
-  email: { fontSize: 16, color: Colors.textMid, marginBottom: 28 },
+  email: { fontSize: 20, color: Colors.text, fontWeight: '800', marginBottom: 6 },
+  subtitle: {
+    color: Colors.textMid,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 22,
+    textAlign: 'center',
+  },
+  statRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+    width: '100%',
+  },
+  statRowCompact: {
+    flexDirection: 'column',
+  },
+  statCard: {
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    flex: 1,
+    padding: 16,
+  },
+  statNumber: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  statLabel: {
+    color: '#D8F3DC',
+    fontSize: 12,
+    marginTop: 4,
+  },
   card: {
     width: '100%',
     backgroundColor: Colors.surface,
@@ -108,22 +173,38 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 13, fontWeight: '700', color: Colors.primary, marginBottom: 14, letterSpacing: 0.5, textTransform: 'uppercase' },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.border },
   rowLabel: { fontSize: 14, color: Colors.textMid },
-  rowValue: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  upgradeBtn: {
+  rowValue: { fontSize: 14, fontWeight: '600', color: Colors.text, flexShrink: 1, textAlign: 'right' },
+  note: { color: Colors.textMuted, fontSize: 13, lineHeight: 20, marginTop: 14 },
+  bullet: {
+    color: Colors.textMid,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 6,
+  },
+  primaryButton: {
+    alignItems: 'center',
     backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
+    borderRadius: 12,
     marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  upgradeBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  signOutBtn: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    paddingVertical: 14,
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  secondaryButton: {
     alignItems: 'center',
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 12,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  signOutText: { color: Colors.danger, fontWeight: '600', fontSize: 15 },
+  secondaryButtonText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
 });

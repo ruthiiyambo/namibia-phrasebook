@@ -5,31 +5,36 @@
   "dependencies": {
     "@expo/metro-runtime": "~56.0.13",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@stripe/stripe-react-native": "0.64.0",
-    "@supabase/supabase-js": "^2.107.0",
     "expo": "~56.0.8",
     "expo-constants": "~56.0.16",
-    "expo-font": "~56.0.5",
-    "expo-linking": "~56.0.13",
+    "expo-dev-client": "~56.0.20",
     "expo-router": "~56.2.8",
-    "expo-secure-store": "~56.0.4",
     "expo-status-bar": "~56.0.4",
     "expo-system-ui": "~56.0.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
-    "react-native-url-polyfill": "^3.0.0",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
   },
+  "engines": {
+    "node": "^20.19.4 || ^22.13.0 || >=24.3.0"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "export:web": "expo export --platform web",
+    "check:data": "python3 scripts/validate_demo_data.py",
+    "audit:data": "python3 scripts/audit_demo_data.py",
+    "clean:workbook": "python3 scripts/clean_workbook.py",
+    "brand:assets": "node scripts/generate_brand_assets.js",
+    "check": "npm run typecheck && npm run check:data && npm run export:web"
   },
   "private": true
 }
